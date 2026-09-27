@@ -1,0 +1,13 @@
+<h1>Tasks</h1>
+
+<ul>
+  {{range .}}
+    <li>{{.}}</li>
+  {{end}}
+</ul>
+
+<form method="POST" action="/tasks">
+  <input type="text" name="title">
+  <button type="submit">Add Task</button>
+</form>
+

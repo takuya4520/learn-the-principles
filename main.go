@@ -1,6 +1,9 @@
 package main
 
-import "net/http"
+import (
+	"html/template"
+	"net/http"
+)
 
 var tasks []string
 
@@ -17,18 +20,17 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func tasksHandler(w http.ResponseWriter, r *http.Request) {
-	for _, task := range tasks {
-		w.Write([]byte(task + "\n"))
+	tmpl, err := template.ParseFiles("templates/tasks.html")
+	if err != nil {
+		http.Error(w, "faild to load template", http.StatusInternalServerError)
+		return
 	}
+	tmpl.Execute(w, tasks)
 }
 
 func createTaskHandler(w http.ResponseWriter, r *http.Request) {
-	buf := make([]byte, 100)
-	n, _ := r.Body.Read(buf)
+	title := r.FormValue("title")
 
-	title := string(buf[:n])
-	println(title)
 	tasks = append(tasks, title)
-
-	w.Write([]byte("Task created"))
+	http.Redirect(w, r, "/tasks", http.StatusSeeOther)
 }

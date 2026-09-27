@@ -2,6 +2,8 @@ package main
 
 import "net/http"
 
+var tasks []string
+
 func main() {
 	http.HandleFunc("GET /{$}", homeHandler)
 	http.HandleFunc("GET /tasks", tasksHandler)
@@ -15,9 +17,18 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func tasksHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("tasks"))
+	for _, task := range tasks {
+		w.Write([]byte(task + "\n"))
+	}
 }
 
 func createTaskHandler(w http.ResponseWriter, r *http.Request) {
+	buf := make([]byte, 100)
+	n, _ := r.Body.Read(buf)
+
+	title := string(buf[:n])
+	println(title)
+	tasks = append(tasks, title)
+
 	w.Write([]byte("Task created"))
 }

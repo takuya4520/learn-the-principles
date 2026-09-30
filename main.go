@@ -7,6 +7,10 @@ import (
 
 var tasks []string
 
+var taskTemplate = template.Must(
+	template.New("task").Parse("<li>{{.}}</li>"),
+)
+
 func main() {
 	http.HandleFunc("GET /{$}", homeHandler)
 	http.HandleFunc("GET /tasks", tasksHandler)
@@ -32,5 +36,6 @@ func createTaskHandler(w http.ResponseWriter, r *http.Request) {
 	title := r.FormValue("title")
 
 	tasks = append(tasks, title)
-	http.Redirect(w, r, "/tasks", http.StatusSeeOther)
+
+  taskTemplate.Execute(w, title)
 }

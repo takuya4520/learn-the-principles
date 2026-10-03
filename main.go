@@ -8,31 +8,29 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var tasks []string
-
 var taskTemplate = template.Must(
 	template.New("task").Parse("<li>{{.}}</li>"),
 )
 
 func main() {
-  db, err := sql.Open(
-    "mysql",
-    "root@tcp(127.0.0.1:3306)/learn_the_principles",
-  )
-  if err != nil{
-    panic(err)
-  }
-  defer db.Close()
+	db, err := sql.Open(
+		"mysql",
+		"root@tcp(127.0.0.1:3306)/learn_the_principles",
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
 
-  if err := db.Ping(); err != nil {
-    panic(err)
-  }
+	if err := db.Ping(); err != nil {
+		panic(err)
+	}
 
-  println("connected to MySQL")
+	println("connected to MySQL")
 
 	http.HandleFunc("GET /{$}", homeHandler)
-	http.HandleFunc("GET /tasks", tasksHandler)
-	http.HandleFunc("POST /tasks", createTaskHandler)
+	http.HandleFunc("GET /tasks", tasksHandler(db))
+	http.HandleFunc("POST /tasks", createTaskHandler(db))
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -41,19 +39,49 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Welcome to Learn the Principles!"))
 }
 
-func tasksHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("templates/tasks.html")
-	if err != nil {
-		http.Error(w, "faild to load template", http.StatusInternalServerError)
-		return
+func tasksHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var tasks []string
+
+		rows, err := db.Query("SELECT title FROM tasks ORDER BY id")
+
+		if err != nil {
+			http.Error(w, "failed to query tasks", http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var title string
+
+			if err := rows.Scan(&title); err != nil {
+				http.Error(w, "failed to scan task", http.StatusInternalServerError)
+				return
+			}
+
+			tasks = append(tasks, title)
+		}
+		tmpl, err := template.ParseFiles("templates/tasks.html")
+		if err != nil {
+			http.Error(w, "faild to load template", http.StatusInternalServerError)
+			return
+		}
+		tmpl.Execute(w, tasks)
 	}
-	tmpl.Execute(w, tasks)
 }
 
-func createTaskHandler(w http.ResponseWriter, r *http.Request) {
-	title := r.FormValue("title")
+func createTaskHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		title := r.FormValue("title")
 
-	tasks = append(tasks, title)
-
-	taskTemplate.Execute(w, title)
+		_, err := db.Exec(
+			"INSERT INTO tasks (title, created_at, updated_at) VALUES (?, NOW(), NOW())",
+			title,
+		)
+		if err != nil {
+			http.Error(w, "failed to create task", http.StatusInternalServerError)
+			return
+		}
+		taskTemplate.Execute(w, title)
+	}
 }

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"database/sql"
 	"html/template"
 	"net/http"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var tasks []string
@@ -12,6 +15,21 @@ var taskTemplate = template.Must(
 )
 
 func main() {
+  db, err := sql.Open(
+    "mysql",
+    "root@tcp(127.0.0.1:3306)/learn_the_principles",
+  )
+  if err != nil{
+    panic(err)
+  }
+  defer db.Close()
+
+  if err := db.Ping(); err != nil {
+    panic(err)
+  }
+
+  println("connected to MySQL")
+
 	http.HandleFunc("GET /{$}", homeHandler)
 	http.HandleFunc("GET /tasks", tasksHandler)
 	http.HandleFunc("POST /tasks", createTaskHandler)
@@ -37,5 +55,5 @@ func createTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	tasks = append(tasks, title)
 
-  taskTemplate.Execute(w, title)
+	taskTemplate.Execute(w, title)
 }

@@ -15,7 +15,7 @@ var taskTemplate = template.Must(
 func main() {
 	db, err := sql.Open(
 		"mysql",
-		"root@tcp(127.0.0.1:3306)/learn_the_principles",
+		"root:password@tcp(127.0.0.1:3307)/learn_the_principles",
 	)
 	if err != nil {
 		panic(err)

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"html/template"
 	"net/http"
+  "os"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -13,11 +14,10 @@ var taskTemplate = template.Must(
 )
 
 func main() {
-	db, err := sql.Open(
-		"mysql",
-		"root:password@tcp(127.0.0.1:3307)/learn_the_principles",
-	)
-	if err != nil {
+  dsn := os.Getenv("DATABASE_URL")
+  db, err := sql.Open("mysql", dsn)
+	
+  if err != nil {
 		panic(err)
 	}
 	defer db.Close()
